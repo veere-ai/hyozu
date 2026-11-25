@@ -7,6 +7,8 @@ mod svg;
 mod tests;
 mod text;
 
+pub use renderer::Recorder;
+
 use crate::core::renderer::Settings;
 use crate::core::{Color, Padding, Point, Rectangle};
 use crate::widget::graphics::geometry::{LineCap, LineJoin, Path, fill};

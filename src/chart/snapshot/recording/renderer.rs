@@ -8,7 +8,9 @@ use geometry::fill::Rule;
 use graphics::cosmic_text::fontdb;
 use std::cell::Cell;
 
-pub(super) struct Recorder {
+/// An iced drawing target for a settled chart and its surrounding static widgets.
+/// Unsupported operations are reported together when the host finishes the frame.
+pub struct Recorder {
     operations: Vec<Operation>,
     faces: Vec<(fontdb::ID, Face)>,
     problem: Cell<Option<Unsupported>>,
@@ -17,6 +19,7 @@ pub(super) struct Recorder {
 }
 
 impl Recorder {
+    /// Start a recording with the source view's renderer settings.
     pub fn new(settings: Settings) -> Self {
         Self {
             operations: vec![],
@@ -29,6 +32,7 @@ impl Recorder {
     fn reject(&self, reason: &'static str) {
         self.problem.set(self.problem.get().or(Some(Unsupported(reason))));
     }
+    /// Finish a complete scene in the given coordinate space.
     pub fn finish(self, bounds: Rectangle) -> Result<Scene, Unsupported> {
         if let Some(problem) = self.problem.get() {
             return Err(problem);

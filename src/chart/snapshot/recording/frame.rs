@@ -5,7 +5,7 @@ use geometry::path::lyon_path::math::{Angle, Transform};
 use geometry::{Fill, Path, Stroke, Style};
 
 #[derive(Clone, Default)]
-pub(super) struct Geometry {
+pub struct Geometry {
     pub operations: Vec<Operation>,
     pub error: Option<Unsupported>,
 }
@@ -20,7 +20,7 @@ impl cache::Cached for Geometry {
     }
 }
 
-pub(super) struct Frame {
+pub struct Frame {
     bounds: Rectangle,
     geometry: Geometry,
     current: Transform,
