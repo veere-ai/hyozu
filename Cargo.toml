@@ -4,6 +4,8 @@ version = "0.3.0"
 edition = "2024"
 
 [dependencies]
+base64 = { version = "0.22", optional = true }
+ttf-parser = { version = "0.25", optional = true }
 georust = { package = "geo", version = "0.33.1", default-features = false, optional = true }
 geojson = { version = "1.0.0", optional = true }
 proj = { version = "0.32.0", default-features = false, optional = true }
@@ -19,6 +21,7 @@ serde_json = { version = "1", optional = true }
 tatami = { git = "https://github.com/airstrike/tatami", branch = "master", optional = true }
 
 [features]
+vector-export = ["dep:base64", "dep:ttf-parser"]
 native-proj = ["simple-features", "dep:proj"]
 simple-features = ["dep:georust", "dep:geojson", "dep:proj4rs", "dep:thiserror", "dep:serde_json"]
 

@@ -1,5 +1,8 @@
 //! A settled chart scene drawn into the caller's renderer at its final logical size.
 
+#[cfg(feature = "vector-export")]
+pub mod recording;
+
 use super::Style;
 use super::scene::Scene;
 use crate::core::{Layout, Padding, Rectangle, mouse, renderer, text};

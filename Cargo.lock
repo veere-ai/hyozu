@@ -1921,6 +1921,7 @@ dependencies = [
 name = "hyozu"
 version = "0.3.0"
 dependencies = [
+ "base64 0.22.1",
  "fount",
  "geo",
  "geojson",
@@ -1935,6 +1936,7 @@ dependencies = [
  "serde_json",
  "tatami",
  "thiserror 2.0.21",
+ "ttf-parser",
 ]
 
 [[package]]
