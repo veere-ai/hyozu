@@ -7,6 +7,7 @@ mod navigation;
 pub mod plot_area;
 pub mod scale_legend;
 mod scene;
+pub mod snapshot;
 pub mod title;
 pub mod value;
 pub mod zoom;
@@ -1925,21 +1926,11 @@ where
     }
 
     fn layout(&mut self, tree: &mut Tree, renderer: &Renderer, limits: &layout::Limits) {
-        use crate::core::Point;
-
         // Push donut-only state (e.g. hole radius) onto the renderer-side
         // pie before scene layout reads it.
         self.apply_kind_to_renderer();
 
         let size = limits.resolve(self.width, self.height, Size::ZERO);
-
-        // Calculate inner size after padding
-        let inner_size = Size::new(
-            (size.width - self.padding.left - self.padding.right).max(0.0),
-            (size.height - self.padding.top - self.padding.bottom).max(0.0),
-        );
-
-        let scene_origin = Point::new(self.padding.left, self.padding.top);
 
         // The design the chart holds (if any) drives themed font/size
         // resolution at shape time. iced withholds the theme from
@@ -1957,13 +1948,7 @@ where
         let scene_tree = &mut scene_slot[0];
 
         // Delegate layout to scene with padded limits
-        self.scene.layout(
-            scene_tree,
-            renderer,
-            &layout::Limits::new(Size::ZERO, inner_size),
-            design,
-        );
-        scene_tree.translation = Vector::new(scene_origin.x, scene_origin.y);
+        self.scene.layout_padded(scene_tree, renderer, size, self.padding, design);
 
         // Lay out the donut center child (if any) as a sibling of the
         // scene, so `update`/`draw` can resolve its bounds as the second
@@ -3071,9 +3056,7 @@ fn entries_in<Message>(
 impl<Message, Design, Theme> widget::Meta for Chart<'_, Message, Design, Theme> where Design: design::Design + Clone {}
 
 /// Draws the background of a [`Chart`] given its [`Style`] and its `bounds`.
-pub fn draw_background(renderer: &mut Renderer, style: &Style, bounds: Rectangle) {
-    use crate::core::renderer::Renderer as _;
-
+pub fn draw_background(renderer: &mut impl crate::core::Renderer, style: &Style, bounds: Rectangle) {
     if style.background.is_some() || style.border.width > 0.0 {
         renderer.fill_quad(
             crate::core::renderer::Quad {

@@ -290,6 +290,10 @@ where
 
     /// Create a new scene from Data, borrowing everything for lifetime 'a.
     pub fn new(data: &'a crate::Data) -> Self {
+        Self::with_animation(data, data.animate)
+    }
+
+    pub(super) fn with_animation(data: &'a crate::Data, animate: bool) -> Self {
         // Extract legend entries from primary and secondary-area marks,
         // paired with each entry's resolved value-format closure (mark
         // override falls through to the chart-level data scale). The
@@ -443,7 +447,7 @@ where
                 } else {
                     PlotArea::new(primary_marks).with_secondary(secondary_marks)
                 };
-                area.with_value_formats(chain).with_animate(data.animate)
+                area.with_value_formats(chain).with_animate(animate)
             },
             palette: palette_strategy,
             user_palette: data.palette.clone(),
@@ -581,6 +585,25 @@ where
     /// encoded series to inherit the chart's flavor. See GOG.md D17.
     pub(crate) fn user_palette(&self) -> Option<&Palette> {
         self.user_palette.as_ref()
+    }
+
+    /// Lay the scene out inside its chart frame, and position its tree in that frame.
+    pub(super) fn layout_padded(
+        &mut self,
+        tree: &mut Tree,
+        renderer: &Renderer,
+        size: crate::core::Size,
+        padding: crate::core::Padding,
+        design: Option<&dyn design::Design>,
+    ) {
+        use crate::core::{Size, Vector, layout};
+
+        let inner = Size::new(
+            (size.width - padding.left - padding.right).max(0.0),
+            (size.height - padding.top - padding.bottom).max(0.0),
+        );
+        self.layout(tree, renderer, &layout::Limits::new(Size::ZERO, inner), design);
+        tree.translation = Vector::new(padding.left, padding.top);
     }
 
     /// Layout the scene with proper tree delegation to 7 pieces.
