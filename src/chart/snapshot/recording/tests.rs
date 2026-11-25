@@ -123,4 +123,10 @@ fn pie_records_curved_slices_outside_leaders_then_selectable_percentage_labels()
         assert!(!inline.contains(&format!("hyozu-{other}-")));
         assert!(inline.contains("25%</tspan>") && inline.contains("75%</tspan>"));
     }
+    let mut fonts = Fonts::default();
+    let first = scene.svg_in(2, &mut fonts);
+    let second = scene.svg_in(3, &mut fonts);
+    assert!(first.contains("font-family:hyozu-2-face-0;") && !second.contains("@font-face"));
+    assert!(second.contains("font-family=\"hyozu-2-face-0\""));
+    assert!(second.contains("url(#hyozu-3-clip-0)"));
 }

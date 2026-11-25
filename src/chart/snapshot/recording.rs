@@ -8,6 +8,7 @@ mod tests;
 mod text;
 
 pub use renderer::Recorder;
+pub use svg::Fonts;
 
 use crate::core::renderer::Settings;
 use crate::core::{Color, Padding, Point, Rectangle};

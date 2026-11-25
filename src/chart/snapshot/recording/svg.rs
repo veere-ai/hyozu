@@ -5,7 +5,14 @@ use crate::widget::graphics::geometry::path::lyon_path::Event;
 use crate::widget::graphics::geometry::{LineCap, LineJoin, Path};
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
+use std::collections::HashMap;
 use std::fmt::Write;
+
+/// Previously embedded font files on a page of inline chart drawings.
+#[derive(Default)]
+pub struct Fonts<'a> {
+    faces: HashMap<&'a [u8], (u64, usize)>,
+}
 
 impl Scene {
     /// Encode the recording as a standalone SVG with selectable text and embedded fonts.
@@ -15,22 +22,37 @@ impl Scene {
 
     /// Encode an inline SVG using a document-unique chart number for its clips and fonts.
     pub fn svg_scoped(&self, scope: u64) -> String {
+        self.svg_in(scope, &mut Fonts::default())
+    }
+
+    /// Write the same scoped SVG while embedding a font only on its first use
+    /// in this document. Different bytes always receive different family names.
+    pub fn svg_in<'a>(&'a self, scope: u64, fonts: &mut Fonts<'a>) -> String {
         let mut out = String::new();
-        self.write_svg(&mut out, scope)
+        self.write_svg(&mut out, scope, fonts)
             .expect("writing to a String cannot fail");
         out
     }
 
-    fn write_svg(&self, out: &mut String, scope: u64) -> std::fmt::Result {
+    fn write_svg<'a>(&'a self, out: &mut String, scope: u64, fonts: &mut Fonts<'a>) -> std::fmt::Result {
         let bounds = self.bounds;
         write!(
             out,
             "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{}\" height=\"{}\" viewBox=\"{} {} {} {}\">",
             bounds.width, bounds.height, bounds.x, bounds.y, bounds.width, bounds.height
         )?;
-        if !self.faces.is_empty() {
-            out.push_str("<defs><style>");
-            for (i, face) in self.faces.iter().enumerate() {
+        let mut families = Vec::with_capacity(self.faces.len());
+        let mut opened = false;
+        for (i, face) in self.faces.iter().enumerate() {
+            let key = (scope, i);
+            let entry = fonts.faces.entry(face.bytes.as_slice());
+            let family = *entry.or_insert(key);
+            families.push(family);
+            if family == key {
+                if !opened {
+                    out.push_str("<defs><style>");
+                    opened = true;
+                }
                 let mime = if face.bytes.starts_with(b"OTTO") {
                     "font/otf"
                 } else {
@@ -43,6 +65,8 @@ impl Scene {
                 STANDARD.encode_string(&face.bytes, out);
                 out.push_str(");}");
             }
+        }
+        if opened {
             out.push_str("</style></defs>");
         }
         let mut clip = 0;
@@ -102,7 +126,7 @@ impl Scene {
                             && a.weight == b.weight
                             && a.optical_size == b.optical_size
                     }) {
-                        span(out, run, scope)?;
+                        span(out, run, families[run[0].face])?;
                     }
                     out.push_str("</text>");
                 }
@@ -144,12 +168,12 @@ fn path_data(out: &mut String, path: &Path) -> std::fmt::Result {
     Ok(())
 }
 
-fn span(out: &mut String, run: &[Glyph], scope: u64) -> std::fmt::Result {
+fn span(out: &mut String, run: &[Glyph], (scope, face): (u64, usize)) -> std::fmt::Result {
     let g = &run[0];
     write!(
         out,
-        "<tspan font-family=\"hyozu-{scope}-face-{}\" font-size=\"{}\" style=\"font-variation-settings:'wght' {}",
-        g.face, g.size, g.weight
+        "<tspan font-family=\"hyozu-{scope}-face-{face}\" font-size=\"{}\" style=\"font-variation-settings:'wght' {}",
+        g.size, g.weight
     )?;
     if let Some(size) = g.optical_size {
         write!(out, ", 'opsz' {size}")?;
