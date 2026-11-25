@@ -610,7 +610,7 @@ pub(super) fn stroke_runs<R: geometry::Renderer>(frame: &mut Frame<R>, runs: &[V
         frame.stroke(&polyline(runs), stroke);
     } else {
         for run in runs {
-            frame.stroke(&polyline(std::slice::from_ref(run)), stroke);
+            frame.stroke(&polyline(std::slice::from_ref(run)), stroke.clone());
         }
     }
 }

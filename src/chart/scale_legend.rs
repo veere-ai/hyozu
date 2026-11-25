@@ -944,8 +944,8 @@ fn draw_bar_outline_and_ticks<Renderer: geometry::Renderer>(
     ticks: &[Tick],
     chrome: &Chrome,
 ) {
-    let hairline = Stroke::default().with_color(chrome.border).with_width(0.5);
-    frame.stroke(&Path::rectangle(bar.position(), bar.size()), hairline);
+    let hairline = || Stroke::default().with_color(chrome.border).with_width(0.5);
+    frame.stroke(&Path::rectangle(bar.position(), bar.size()), hairline());
 
     match orientation {
         Orientation::Horizontal => {
@@ -955,7 +955,7 @@ fn draw_bar_outline_and_ticks<Renderer: geometry::Renderer>(
                 let x = bar.x + bar.width * tick.t;
                 frame.stroke(
                     &Path::line(Point::new(x, tick_top), Point::new(x, tick_bottom)),
-                    hairline,
+                    hairline(),
                 );
                 // Endpoints align to their corner (the bar's outer edge);
                 // interior ticks center their label on the tick line.
@@ -985,7 +985,7 @@ fn draw_bar_outline_and_ticks<Renderer: geometry::Renderer>(
                 let y = bar.y + bar.height * (1.0 - tick.t);
                 frame.stroke(
                     &Path::line(Point::new(tick_left, y), Point::new(tick_right, y)),
-                    hairline,
+                    hairline(),
                 );
                 // Center every label on its tick. Endpoint-specific
                 // top/bottom anchoring makes vertical legends look uneven
