@@ -37,6 +37,25 @@ impl Recorder {
         if let Some(problem) = self.problem.get() {
             return Err(problem);
         }
+        if ![bounds.x, bounds.y, bounds.width, bounds.height]
+            .into_iter()
+            .all(f32::is_finite)
+            || bounds.width <= 0.
+            || bounds.height <= 0.
+        {
+            return Err(Unsupported("invalid chart dimensions"));
+        }
+        let mut depth = 0usize;
+        for op in &self.operations {
+            match op {
+                Operation::Transform(_) | Operation::Clip(_) => depth += 1,
+                Operation::End => depth = depth.checked_sub(1).ok_or(Unsupported("unbalanced chart group"))?,
+                _ => {}
+            }
+        }
+        if depth != 0 {
+            return Err(Unsupported("unclosed chart group"));
+        }
         Ok(Scene {
             bounds,
             operations: self.operations,

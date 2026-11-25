@@ -6,8 +6,8 @@ use geometry::{Fill, Path, Stroke, Style};
 
 #[derive(Clone, Default)]
 pub struct Geometry {
-    pub operations: Vec<Operation>,
-    pub error: Option<Unsupported>,
+    pub(super) operations: Vec<Operation>,
+    pub(super) error: Option<Unsupported>,
 }
 
 impl cache::Cached for Geometry {
