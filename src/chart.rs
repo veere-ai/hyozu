@@ -5269,14 +5269,17 @@ mod tests {
             touch::Event::FingerPressed {
                 id: touch::Finger(1),
                 position: point,
+                timestamp: None,
             },
             touch::Event::FingerMoved {
                 id: touch::Finger(1),
                 position: point,
+                timestamp: None,
             },
             touch::Event::FingerLifted {
                 id: touch::Finger(1),
                 position: point,
+                timestamp: None,
             },
         ] {
             assert_eq!(
