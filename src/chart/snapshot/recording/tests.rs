@@ -114,4 +114,13 @@ fn pie_records_curved_slices_outside_leaders_then_selectable_percentage_labels()
     assert!(svg.contains("25%</tspan>") && svg.contains("75%</tspan>"));
     assert!(svg.contains("@font-face") && svg.contains("transform=\"matrix("));
     assert!(!svg.contains("<image"));
+    for (scope, other) in [(17, 29), (29, 17)] {
+        let inline = scene.svg_scoped(scope);
+        assert!(inline.contains(&format!("id=\"hyozu-{scope}-clip-0\"")));
+        assert!(inline.contains(&format!("url(#hyozu-{scope}-clip-0)")));
+        assert!(inline.contains(&format!("font-family:hyozu-{scope}-face-0;")));
+        assert!(inline.contains(&format!("font-family=\"hyozu-{scope}-face-0\"")));
+        assert!(!inline.contains(&format!("hyozu-{other}-")));
+        assert!(inline.contains("25%</tspan>") && inline.contains("75%</tspan>"));
+    }
 }

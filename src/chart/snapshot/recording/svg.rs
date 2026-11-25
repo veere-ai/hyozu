@@ -10,11 +10,18 @@ use std::fmt::Write;
 impl Scene {
     /// Encode the recording as a standalone SVG with selectable text and embedded fonts.
     pub fn svg(&self) -> String {
+        self.svg_scoped(0)
+    }
+
+    /// Encode an inline SVG using a document-unique chart number for its clips and fonts.
+    pub fn svg_scoped(&self, scope: u64) -> String {
         let mut out = String::new();
-        self.write_svg(&mut out).expect("writing to a String cannot fail");
+        self.write_svg(&mut out, scope)
+            .expect("writing to a String cannot fail");
         out
     }
-    fn write_svg(&self, out: &mut String) -> std::fmt::Result {
+
+    fn write_svg(&self, out: &mut String, scope: u64) -> std::fmt::Result {
         let bounds = self.bounds;
         write!(
             out,
@@ -29,7 +36,10 @@ impl Scene {
                 } else {
                     "font/ttf"
                 };
-                write!(out, "@font-face{{font-family:hyozu{i};src:url(data:{mime};base64,")?;
+                write!(
+                    out,
+                    "@font-face{{font-family:hyozu-{scope}-face-{i};src:url(data:{mime};base64,"
+                )?;
                 STANDARD.encode_string(&face.bytes, out);
                 out.push_str(");}");
             }
@@ -41,7 +51,7 @@ impl Scene {
                 Operation::Clip(r) => {
                     write!(
                         out,
-                        "<defs><clipPath id=\"clip{clip}\" clipPathUnits=\"userSpaceOnUse\"><rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"/></clipPath></defs><g clip-path=\"url(#clip{clip})\">",
+                        "<defs><clipPath id=\"hyozu-{scope}-clip-{clip}\" clipPathUnits=\"userSpaceOnUse\"><rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"/></clipPath></defs><g clip-path=\"url(#hyozu-{scope}-clip-{clip})\">",
                         r.x, r.y, r.width, r.height
                     )?;
                     clip += 1;
@@ -92,7 +102,7 @@ impl Scene {
                             && a.weight == b.weight
                             && a.optical_size == b.optical_size
                     }) {
-                        span(out, run)?;
+                        span(out, run, scope)?;
                     }
                     out.push_str("</text>");
                 }
@@ -134,11 +144,11 @@ fn path_data(out: &mut String, path: &Path) -> std::fmt::Result {
     Ok(())
 }
 
-fn span(out: &mut String, run: &[Glyph]) -> std::fmt::Result {
+fn span(out: &mut String, run: &[Glyph], scope: u64) -> std::fmt::Result {
     let g = &run[0];
     write!(
         out,
-        "<tspan font-family=\"hyozu{}\" font-size=\"{}\" style=\"font-variation-settings:'wght' {}",
+        "<tspan font-family=\"hyozu-{scope}-face-{}\" font-size=\"{}\" style=\"font-variation-settings:'wght' {}",
         g.face, g.size, g.weight
     )?;
     if let Some(size) = g.optical_size {
