@@ -111,7 +111,7 @@ pub fn pie(
         return Err(Unsupported("invalid chart dimensions"));
     }
     let mut renderer = renderer::Recorder::new(settings);
-    super::draw(
+    let _drawing = super::draw(
         data,
         design,
         appearance,

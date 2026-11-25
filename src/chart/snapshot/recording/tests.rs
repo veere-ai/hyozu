@@ -3,6 +3,28 @@ use crate::core::{Font, Size, Theme, renderer};
 use crate::mark::pie::{label, slice};
 use crate::widget::graphics::text::font_system;
 
+#[test]
+fn host_composites_and_rounded_clips_report_unsupported() {
+    use crate::core::Renderer as _;
+
+    let bounds = Rectangle::with_size(Size::new(64., 48.));
+    let mut recorder = Recorder::new(renderer::Settings::default());
+    recorder.start_opacity(bounds, 0.5);
+    recorder.end_opacity();
+    assert!(matches!(
+        recorder.finish(bounds),
+        Err(Unsupported("isolated chart group"))
+    ));
+
+    let mut recorder = Recorder::new(renderer::Settings::default());
+    recorder.start_content_clip(bounds, bounds, [2.; 4]);
+    recorder.end_content_clip();
+    assert!(matches!(
+        recorder.finish(bounds),
+        Err(Unsupported("rounded chart clip"))
+    ));
+}
+
 // The test picks a face that the host can legally embed and that maps its label
 // characters. The glyph positions and paths still come from the real pie scene.
 fn label_font() -> Font {
@@ -72,14 +94,39 @@ fn pie_records_curved_slices_outside_leaders_then_selectable_percentage_labels()
         .collect::<Vec<_>>();
     assert_eq!(slices.len(), 2);
     assert_eq!([slices[0].2, slices[1].2], [red, blue]);
-    for (_, path, _) in &slices {
-        use crate::widget::graphics::geometry::path::lyon_path::Event;
-        assert!(
-            path.raw()
-                .iter()
-                .any(|e| matches!(e, Event::Cubic { .. } | Event::Quadratic { .. }))
-        );
-    }
+    // The live sector builder flattens a full turn into 64 straight segments.
+    // The recorder must keep the two closed wedges and their actual proportions.
+    let areas: Vec<_> = slices
+        .iter()
+        .map(|(_, path, _)| {
+            use crate::widget::graphics::geometry::path::lyon_path::Event;
+            let mut area = 0.;
+            let mut segments = 0;
+            let mut closed = false;
+            for event in path.raw().iter() {
+                let (from, to) = match event {
+                    Event::Line { from, to } => {
+                        segments += 1;
+                        (from, to)
+                    }
+                    Event::End {
+                        last,
+                        first,
+                        close: true,
+                    } => {
+                        closed = true;
+                        (last, first)
+                    }
+                    Event::Begin { .. } => continue,
+                    _ => panic!("expected the chart's tessellated sector"),
+                };
+                area += from.x * to.y - to.x * from.y;
+            }
+            assert!(closed && segments >= 16);
+            area.abs() / 2.
+        })
+        .collect();
+    assert!((areas[1] / areas[0] - 3.).abs() < 0.08, "wedge areas {areas:?}");
     let leaders = scene
         .operations
         .iter()

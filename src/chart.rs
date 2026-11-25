@@ -1948,7 +1948,8 @@ where
         let scene_tree = &mut scene_slot[0];
 
         // Delegate layout to scene with padded limits
-        self.scene.layout_padded(scene_tree, renderer, size, self.padding, design);
+        self.scene
+            .layout_padded(scene_tree, renderer, size, self.padding, design);
 
         // Lay out the donut center child (if any) as a sibling of the
         // scene, so `update`/`draw` can resolve its bounds as the second

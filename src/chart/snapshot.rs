@@ -5,12 +5,20 @@ pub mod recording;
 
 use super::Style;
 use super::scene::Scene;
+use crate::core::widget::Tree;
 use crate::core::{Layout, Padding, Rectangle, mouse, renderer, text};
 use crate::widget::renderer::geometry;
 use crate::{Data, Design};
 
+/// Keeps shaped text alive until a deferred renderer has painted the frame.
+#[must_use = "keep the drawing alive until rendering or screenshot capture finishes"]
+pub struct Drawing {
+    _tree: Tree,
+}
+
 /// Draw a single chart with the same frame, marks, guides, legend and shaped
-/// labels as the live chart. Exporters can supply a renderer that records the
+/// labels as the live chart. Keep the returned drawing alive through presentation
+/// or screenshot capture. Exporters can supply a renderer that records the
 /// drawing operations. Bounds and viewport share the caller's coordinate space.
 ///
 /// The chart always draws at the end of its animation. Composition outside the
@@ -25,11 +33,12 @@ pub fn draw<R>(
     defaults: &renderer::Style,
     bounds: Rectangle,
     viewport: &Rectangle,
-) where
+) -> Drawing
+where
     R: text::Renderer + geometry::Renderer,
 {
     let Some(clip) = bounds.intersection(viewport) else {
-        return;
+        return Drawing { _tree: Tree::empty() };
     };
     let mut scene = Scene::<(), R>::with_animation(data, false);
     let mut tree = scene.state();
@@ -51,6 +60,7 @@ pub fn draw<R>(
             appearance.track,
         );
     });
+    Drawing { _tree: tree }
 }
 
 #[cfg(test)]
@@ -64,7 +74,7 @@ mod tests {
 
     #[test]
     fn animated_pie_snapshot_matches_the_settled_widget_in_a_clipped_frame() {
-        let mut renderer = iced::futures::executor::block_on(Renderer::new(Settings::default(), Some("tiny-skia")))
+        let mut renderer = iced::futures::executor::block_on(Renderer::new(Settings::default(), Some("vello-cpu")))
             .expect("headless renderer");
         let red = Color::from_rgb(1., 0., 0.);
         let blue = Color::from_rgb(0., 0., 1.);
@@ -107,7 +117,7 @@ mod tests {
         let reference = renderer.screenshot(window, 1., Color::TRANSPARENT);
 
         renderer.reset(viewport);
-        draw(
+        let _drawing = draw(
             &data,
             &theme,
             &appearance,

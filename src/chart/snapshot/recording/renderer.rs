@@ -65,6 +65,18 @@ impl Recorder {
 }
 
 impl core::Renderer for Recorder {
+    fn start_composite(&mut self, _: Rectangle, _: f32, _: core::renderer::BlendMode) {
+        self.reject("isolated chart group");
+    }
+    fn start_rotated_clip(&mut self, _: Rectangle, _: core::renderer::Rotation, _: [f32; 4]) {
+        self.reject("rotated chart clip");
+    }
+    fn start_content_clip(&mut self, visible: Rectangle, frame: Rectangle, radii: [f32; 4]) {
+        if radii != [0.; 4] {
+            self.reject("rounded chart clip");
+        }
+        self.start_layer(visible.intersection(&frame).unwrap_or_default());
+    }
     fn start_layer(&mut self, bounds: Rectangle) {
         self.operations.push(Operation::Clip(bounds));
     }
