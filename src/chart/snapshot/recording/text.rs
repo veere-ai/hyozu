@@ -29,6 +29,7 @@ fn face_index(
             Ok(Face {
                 bytes: bytes.to_vec(),
                 postscript_name: info.post_script_name.clone(),
+                subsetting_allowed: font.is_subsetting_allowed(),
             })
         })
         .ok_or(Unsupported("font bytes unavailable"))??;

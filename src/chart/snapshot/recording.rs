@@ -53,6 +53,8 @@ pub struct Glyph {
 pub struct Face {
     pub postscript_name: String,
     pub bytes: Vec<u8>,
+    /// Whether the font's OS/2 embedding flags allow a consumer to embed a subset.
+    pub subsetting_allowed: bool,
 }
 
 /// Recorded paint order, source coordinate space and font resources.
