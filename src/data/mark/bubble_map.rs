@@ -19,6 +19,7 @@ pub struct MapPoint {
     pub(crate) color: Option<Color>,
     /// Optional text label shown near the bubble.
     pub(crate) label: Option<String>,
+    detail: Option<String>,
     /// Optional name for this point (used in legends).
     pub(crate) name: Option<String>,
     /// Optional feature id. When set, a click on this bubble emits
@@ -37,12 +38,22 @@ pub fn map_point(lat: impl Into<f64>, lon: impl Into<f64>, value: impl Into<f64>
         value: value.into(),
         color: None,
         label: None,
+        detail: None,
         name: None,
         id: None,
     }
 }
 
 impl MapPoint {
+    /// Set the formatted value for this point's default hover tooltip.
+    /// Its position, visible label and size continue to use the plotted data.
+    pub fn detail(mut self, value: impl Into<String>) -> Self {
+        if self.value.is_finite() {
+            self.detail = Some(value.into());
+        }
+        self
+    }
+
     /// Sets the color for this point.
     pub fn color(mut self, color: impl Into<Color>) -> Self {
         self.color = Some(color.into());
@@ -201,6 +212,7 @@ pub fn bubble_map(points: impl IntoIterator<Item = MapPoint>) -> Xy {
         spherical: false,
         labels,
         tooltip_values,
+        details: entries.into_iter().map(|point| point.detail).collect(),
         feature_ids,
         size_legend: None,
         size_legend_title: None,
@@ -299,6 +311,25 @@ fn compute_value_range(points: &[MapPoint]) -> (f64, f64) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn inspection_tracks_each_measured_hit() {
+        let bubbles = bubble_map([
+            map_point(45.0, 11.0, -12.5).label("West").detail("−12.5 m"),
+            map_point(45.0, 11.0, 12.5).label("East").detail("12.5 kg"),
+            map_point(45.0, 11.0, f64::NAN).detail("unavailable"),
+        ]);
+        assert_eq!(bubbles.details, [Some("−12.5 m".into()), Some("12.5 kg".into()), None]);
+        assert_eq!(bubbles.labels[0].as_deref(), Some("West"));
+        let region = crate::choropleth_entry("A", 5.25).detail("5.25 kg");
+        assert_eq!(region.inspection(), Some("5.25 kg"));
+        assert!(
+            crate::choropleth_entry_available("A")
+                .detail("masked")
+                .inspection()
+                .is_none()
+        );
+    }
 
     #[test]
     fn bubble_map_carries_point_feature_ids_into_xy_mark() {

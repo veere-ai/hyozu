@@ -3977,11 +3977,12 @@ fn draw_geo_tooltip_overlay<Message>(
         let series_name = xy.data.name.clone();
         let label = point_label.clone();
         let value = point_value.unwrap_or(point.y);
+        let detail = xy.data.details.get(point_idx).cloned().flatten();
         chain_tooltip = tooltip_config.clone().format(move |_entry: &TooltipEntry| {
-            let formatted = match &mark_format {
+            let formatted = detail.clone().unwrap_or_else(|| match &mark_format {
                 Some(f) => f(&value),
                 None => crate::scale::default_f64_format(value),
-            };
+            });
             let descriptor = label.as_deref().or(series_name.as_deref());
             match descriptor {
                 Some(d) => format!("{d}: {formatted}"),
@@ -4130,12 +4131,8 @@ fn draw_choropleth_tooltip_overlay<Message>(
 
     // Look up the entry value (None when the feature has an
     // "available, no value" entry, or no entry at all).
-    let entry_value = c
-        .data
-        .entries()
-        .iter()
-        .find(|e| e.id() == &feature_id)
-        .and_then(|e| e.value());
+    let hit = c.data.entries().iter().find(|entry| entry.id() == &feature_id);
+    let entry_value = hit.and_then(|entry| entry.value());
 
     // Look up the human-readable feature name from the GeoData. Falls
     // back to the id when the feature has no `name` property.
@@ -4220,15 +4217,16 @@ fn draw_choropleth_tooltip_overlay<Message>(
             .and_then(|l| l.value_format_ref().cloned())
             .or_else(|| c.data.color_scale_format())
             .or_else(|| scene.primary_mark_value_format(mark_idx).cloned());
+        let detail = hit.and_then(|entry| entry.inspection()).map(str::to_owned);
         chain_tooltip = tooltip_config.clone().format(move |entry: &TooltipEntry| {
             let name = entry.series_name.clone().unwrap_or_default();
             if entry.y.is_nan() {
                 return name;
             }
-            let formatted = match &resolved_format {
+            let formatted = detail.clone().unwrap_or_else(|| match &resolved_format {
                 Some(f) => f(&entry.y),
                 None => plot_area::choropleth::format_legend_value(entry.y),
-            };
+            });
             if name.is_empty() {
                 formatted
             } else {

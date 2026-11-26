@@ -59,6 +59,8 @@ pub struct Xy {
     /// `MapPoint::value` so geo bubbles report their original magnitude
     /// instead of latitude.
     pub(crate) tooltip_values: Vec<Option<f64>>,
+    /// Optional source-formatted values aligned with geographic bubble hits.
+    pub(crate) details: Vec<Option<String>>,
     /// Optional per-point feature ids used by geographic point marks.
     /// Either empty (non-addressable points) or aligned 1:1 with
     /// [`Self::points`]. Populated by [`crate::bubble_map`] from each
@@ -97,6 +99,7 @@ pub fn xy(data: impl IntoDatums) -> Xy {
         spherical: false,
         labels: Vec::new(),
         tooltip_values: Vec::new(),
+        details: Vec::new(),
         feature_ids: Vec::new(),
         size_legend: None,
         size_legend_title: None,

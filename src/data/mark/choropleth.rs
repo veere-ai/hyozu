@@ -17,6 +17,7 @@ use crate::scale::ColorScale;
 pub struct ChoroplethEntry {
     pub(crate) id: crate::feature::Id,
     pub(crate) value: Option<f64>,
+    detail: Option<String>,
 }
 
 /// Creates a value-bearing choropleth entry. `id` accepts anything
@@ -26,6 +27,7 @@ pub fn choropleth_entry(id: impl Into<crate::feature::Id>, value: impl Into<f64>
     ChoroplethEntry {
         id: id.into(),
         value: Some(value.into()),
+        detail: None,
     }
 }
 
@@ -37,10 +39,23 @@ pub fn choropleth_entry_available(id: impl Into<crate::feature::Id>) -> Chorople
     ChoroplethEntry {
         id: id.into(),
         value: None,
+        detail: None,
     }
 }
 
 impl ChoroplethEntry {
+    /// Set a formatted value for the default hover tooltip of a measured region.
+    pub fn detail(mut self, value: impl Into<String>) -> Self {
+        if self.value.is_some_and(f64::is_finite) {
+            self.detail = Some(value.into());
+        }
+        self
+    }
+
+    pub(crate) fn inspection(&self) -> Option<&str> {
+        self.detail.as_deref()
+    }
+
     /// Feature ID this entry maps to.
     pub fn id(&self) -> &crate::feature::Id {
         &self.id
@@ -261,10 +276,7 @@ where
         Choropleth {
             entries: self
                 .into_iter()
-                .map(|(id, value)| ChoroplethEntry {
-                    id: id.into(),
-                    value: Some(value.into()),
-                })
+                .map(|(id, value)| choropleth_entry(id, value))
                 .collect(),
             color: ColorScale::default().sqrt(),
             legend_title: None,
@@ -290,10 +302,7 @@ where
         Choropleth {
             entries: self
                 .into_iter()
-                .map(|(id, value)| ChoroplethEntry {
-                    id: id.into(),
-                    value: Some(value.into()),
-                })
+                .map(|(id, value)| choropleth_entry(id, value))
                 .collect(),
             color: ColorScale::default().sqrt(),
             legend_title: None,
